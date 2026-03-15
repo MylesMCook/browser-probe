@@ -5,6 +5,9 @@ pos-03,true,Try to break the billing flow and check responsive behavior too.,Sho
 pos-04,true,Probe just the search and filter experience on this page.,Should stay scoped to the feature.
 pos-05,true,Test this app even if the UI is in German and note what still works.,Should handle non-English UI without relying on English labels.
 pos-06,true,Check whether the signup flow is blocked by auth or missing credentials and report that cleanly.,Should report blocked areas honestly.
+pos-07,true,Probe this localhost app across multiple shell blocks and keep the same browser session without trusting stale eval state.,Should mention session preflight and one reopen retry.
+pos-08,true,Probe this authenticated dashboard and save enough browser state to recover if the page must be reopened mid-run.,Should save explicit state after login rather than relying on session-name.
+pos-09,true,Probe this staging app read-only and keep navigation constrained to its domain.,Should preserve allowed-domains and read-mostly posture.
 neg-01,false,Open this site and click the export button, then save the download to ./tmp.,This belongs to agent-browser.
 neg-02,false,Dogfood this staging site and give me repro videos and screenshots for every bug.,This belongs to dogfood.
 neg-03,false,Log into this app and save reusable auth for later browser runs.,This is primarily agent-browser.

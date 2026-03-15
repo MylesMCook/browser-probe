@@ -19,6 +19,13 @@ Do not use it for:
 
 - `agent-browser 0.20.x`
 
+## Session contract
+
+- Reuse one `AGENT_BROWSER_SESSION` for the run.
+- Treat that session as live isolation, not as a guarantee that `eval` keeps the same page context across later shell blocks.
+- Before any `eval`-heavy block, run the preflight in [references/session-preflight.md](references/session-preflight.md).
+- After successful auth, save explicit state to `AGENT_BROWSER_STATE_FILE` if later recovery needs to reopen the page.
+
 ## What it does
 
 `browser-probe` runs in four stages:
@@ -37,7 +44,7 @@ Do not use it for:
 ## Install
 
 ```bash
-npx skills add https://github.com/MylesMCook/browser-probe --skill browser-probe
+npx skills add MylesMCook/browser-probe
 ```
 
 ## Example

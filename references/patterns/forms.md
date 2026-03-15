@@ -2,9 +2,16 @@
 
 ---
 
+Before using this file:
+
+- Take a fresh `agent-browser snapshot -i -C`.
+- Run the preflight in [../session-preflight.md](../session-preflight.md) before any `eval`.
+- Prefer direct `get count`, `get text`, and `get url` checks when they are enough.
+
 ## Discover form structure before testing
 
 ```bash
+# Run the preflight in ../session-preflight.md first.
 agent-browser eval --stdin <<'EVALEOF'
 JSON.stringify({
   nativeInputs: Array.from(document.querySelectorAll('input, textarea, select')).map(el => ({
@@ -36,6 +43,7 @@ EVALEOF
 Before filling, discover what options are available for any select inputs:
 
 ```bash
+# Run the preflight in ../session-preflight.md first.
 agent-browser eval --stdin <<'EVALEOF'
 JSON.stringify(Array.from(document.querySelectorAll('select')).map(s => ({
   name: s.name || s.id,
@@ -119,7 +127,7 @@ agent-browser snapshot -i -C
 # Identify the first errored input ref
 agent-browser fill @eN "corrected value"
 agent-browser wait 500
-agent-browser eval 'document.querySelectorAll("[aria-invalid=\"true\"]").length'
+agent-browser get count '[aria-invalid="true"]'
 ```
 
 Expected: error cleared from that field (count decreased). If errors persist after correction, that's a Medium finding. **PASS / FAIL**
@@ -218,7 +226,7 @@ agent-browser screenshot --full
 Assert updated value persists — reload the page first so the input field value can't cause a false pass:
 
 ```bash
-agent-browser eval 'window.location.href'
+agent-browser get url
 # ↑ Copy the URL printed above, then paste it into the open command below:
 agent-browser open "PASTE_CAPTURED_URL_HERE"
 agent-browser wait --load networkidle

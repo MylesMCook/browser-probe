@@ -4,10 +4,11 @@ Run the Stage 2 plan in priority order. Keep evidence proportional to the mode a
 
 ## Session and target discipline
 
-Use the same `AGENT_BROWSER_SESSION` for the whole run:
+Use the same `AGENT_BROWSER_SESSION` for the whole run, but do not treat it as a guarantee that `eval` still points at the last real page.
 
 ```bash
 export AGENT_BROWSER_SESSION="${AGENT_BROWSER_SESSION:?unset}"
+export AGENT_BROWSER_STATE_FILE="${AGENT_BROWSER_STATE_FILE:-/tmp/${AGENT_BROWSER_SESSION}-auth-state.json}"
 agent-browser open "$TARGET_URL"
 agent-browser wait --load networkidle
 agent-browser snapshot -i -C
@@ -21,6 +22,8 @@ agent-browser --allowed-domains "$TARGET_HOST" open "$TARGET_URL"
 ```
 
 If `TARGET_HOST` is empty, skip `--allowed-domains`, note the gap, and continue read-only.
+
+Before any block that depends on `eval`, run the preflight in [session-preflight.md](session-preflight.md). If it detects a stale context, do one same-session reopen/retry and then mark the area blocked if the retry still fails.
 
 ## Locale and selector discipline
 
@@ -38,9 +41,10 @@ For each test-plan item:
 
 1. Navigate to the relevant route or state.
 2. Snapshot with `-i -C`.
-3. Execute the test.
-4. Re-snapshot after any DOM change.
-5. Classify the result as pass, fail, flaky, blocked, or skipped.
+3. Run the session preflight if the next step depends on `eval`.
+4. Execute the test.
+5. Re-snapshot after any DOM change.
+6. Classify the result as pass, fail, flaky, blocked, or skipped.
 
 Retry one time after a short wait before calling something a confirmed failure:
 
@@ -50,6 +54,8 @@ agent-browser wait 2000
 ```
 
 If it passes on retry, call it flaky.
+
+If the failure was a stale `eval` context rather than app behavior, use [recovery.md](recovery.md) instead of piling on more waits.
 
 ## Evidence rules by mode
 

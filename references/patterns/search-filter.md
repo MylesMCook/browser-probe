@@ -2,9 +2,16 @@
 
 ---
 
+Before using this file:
+
+- Take a fresh `agent-browser snapshot -i -C`.
+- Run the preflight in [../session-preflight.md](../session-preflight.md) before any `eval`.
+- Prefer `get count`, `get url`, and `get text` when they answer the question directly.
+
 ## Discover search and filter controls
 
 ```bash
+# Run the preflight in ../session-preflight.md first.
 agent-browser eval --stdin <<'EVALEOF'
 JSON.stringify({
   searchInputs: Array.from(document.querySelectorAll([
@@ -39,6 +46,7 @@ EVALEOF
 First, find a real term from the current data to use as the search query:
 
 ```bash
+# Run the preflight in ../session-preflight.md first.
 agent-browser eval --stdin <<'EVALEOF'
 const cells = Array.from(document.querySelectorAll('table tbody tr td:first-child, [class*="card"] [class*="title"], [class*="card"] [class*="name"], [class*="item"] span'));
 const terms = cells.map(el => el.textContent?.trim()).filter(t => t && t.length > 2 && t.length < 30);
@@ -51,7 +59,7 @@ Use the returned `firstTerm` as the search query below. If `termCount` is 0, the
 Note the unfiltered count first:
 
 ```bash
-agent-browser eval 'document.querySelectorAll("table tbody tr, [class*=\"card\"], [class*=\"item\"]").length'
+agent-browser get count 'table tbody tr, [class*="card"], [class*="item"]'
 ```
 
 Re-snapshot, fill search with the real term found above — substitute the actual `firstTerm` value returned by the discovery eval:
@@ -113,7 +121,7 @@ agent-browser wait 100
 agent-browser press "Control+a"
 agent-browser press "Backspace"
 agent-browser wait 500
-agent-browser eval 'document.querySelectorAll("table tbody tr, [class*=\"card\"], [class*=\"item\"]").length'
+agent-browser get count 'table tbody tr, [class*="card"], [class*="item"]'
 ```
 
 If count is still filtered, try the macOS shortcut:
@@ -122,7 +130,7 @@ If count is still filtered, try the macOS shortcut:
 agent-browser press "Meta+a"
 agent-browser press "Backspace"
 agent-browser wait 500
-agent-browser eval 'document.querySelectorAll("table tbody tr, [class*=\"card\"], [class*=\"item\"]").length'
+agent-browser get count 'table tbody tr, [class*="card"], [class*="item"]'
 ```
 
 If still filtered, try Escape (some search implementations use it to clear):
@@ -130,7 +138,7 @@ If still filtered, try Escape (some search implementations use it to clear):
 ```bash
 agent-browser press Escape
 agent-browser wait 500
-agent-browser eval 'document.querySelectorAll("table tbody tr, [class*=\"card\"], [class*=\"item\"]").length'
+agent-browser get count 'table tbody tr, [class*="card"], [class*="item"]'
 ```
 
 Expected: count returns to the original unfiltered count. **PASS / FAIL**
@@ -161,6 +169,7 @@ Expected: no server error (500), URL is properly encoded (no raw `&` breaking qu
 First discover available filter controls and their options:
 
 ```bash
+# Run the preflight in ../session-preflight.md first.
 agent-browser eval --stdin <<'EVALEOF'
 JSON.stringify({
   nativeSelects: Array.from(document.querySelectorAll('select')).map(s => ({
@@ -185,7 +194,7 @@ agent-browser snapshot -i -C
 # e.g. if discovery returned options ["Active", "Inactive"], use "Active"
 agent-browser select @eN "SUBSTITUTE_first_option_HERE"
 agent-browser wait 500
-agent-browser eval 'document.querySelectorAll("table tbody tr, [class*=\"card\"]").length'
+agent-browser get count 'table tbody tr, [class*="card"]'
 # record count-after-filter-1
 ```
 
@@ -196,7 +205,7 @@ agent-browser snapshot -i -C
 # SUBSTITUTE_second_option_HERE with a real value from a different filter's discovery
 agent-browser select @eN "SUBSTITUTE_second_option_HERE"
 agent-browser wait 500
-agent-browser eval 'document.querySelectorAll("table tbody tr, [class*=\"card\"]").length'
+agent-browser get count 'table tbody tr, [class*="card"]'
 ```
 
 Expected: count ≤ count-after-filter-1. If applying a second filter *increases* the count, the filters are likely using OR logic where AND is expected — that's a High finding. **PASS / FAIL**
@@ -226,7 +235,7 @@ If a clear button exists:
 agent-browser snapshot -i -C
 agent-browser click @eN
 agent-browser wait 500
-agent-browser eval 'document.querySelectorAll("table tbody tr, [class*=\"card\"]").length'
+agent-browser get count 'table tbody tr, [class*="card"]'
 ```
 
 Expected: count returns to unfiltered total. **PASS / FAIL**
@@ -247,7 +256,7 @@ If the URL contains filter parameters: copy the URL returned above, then navigat
 # Paste the URL captured above, replacing PASTE_FILTERED_URL_HERE:
 agent-browser open "PASTE_FILTERED_URL_HERE"
 agent-browser wait --load networkidle
-agent-browser eval 'document.querySelectorAll("table tbody tr, [class*=\"card\"]").length'
+agent-browser get count 'table tbody tr, [class*="card"]'
 ```
 
 Expected: same filtered count as before. If the URL has no filter params and navigating to the page loses filter state, that's a Medium finding — filtered views can't be shared or bookmarked. **PASS / FAIL**

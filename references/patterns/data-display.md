@@ -2,11 +2,18 @@
 
 ---
 
+Before using this file:
+
+- Take a fresh `agent-browser snapshot -i -C`.
+- Run the preflight in [../session-preflight.md](../session-preflight.md) before any `eval`.
+- Prefer `get count`, `get text`, and `get url` when they answer the question directly.
+
 ## Detect data display type
 
 Before running any data display tests, establish what kind of display is in use:
 
 ```bash
+# Run the preflight in ../session-preflight.md first.
 agent-browser eval --stdin <<'EVALEOF'
 JSON.stringify({
   hasTables: document.querySelectorAll('table tbody tr').length,
@@ -119,7 +126,7 @@ EVALEOF
 
 ```bash
 agent-browser wait 500
-agent-browser eval 'document.querySelector("table tbody tr td, [aria-rowindex]")?.textContent?.trim()'
+agent-browser get text 'table tbody tr td, [aria-rowindex]'
 ```
 
 Expected: renders correctly at top — not blank, not showing last-page data. **PASS / FAIL**
@@ -133,7 +140,7 @@ When `hasExplicitInfiniteScroll` is true and there is no traditional pagination:
 Note initial item count:
 
 ```bash
-agent-browser eval 'document.querySelectorAll("table tbody tr, [class*=\"card\"], [class*=\"item\"]").length'
+agent-browser get count 'table tbody tr, [class*="card"], [class*="item"]'
 ```
 
 Scroll to bottom and wait for new content. Use the scroll container, not the window:
@@ -155,7 +162,7 @@ EVALEOF
 ```bash
 agent-browser wait 1500
 agent-browser screenshot --full
-agent-browser eval 'document.querySelectorAll("table tbody tr, [class*=\"card\"], [class*=\"item\"]").length'
+agent-browser get count 'table tbody tr, [class*="card"], [class*="item"]'
 ```
 
 Expected: count is greater than before — new items loaded. If count stayed the same and there's no "end of results" indicator, infinite scroll is broken. That's a High finding. **PASS / FAIL**
@@ -233,14 +240,14 @@ agent-browser snapshot -i -C
 # Click sortable header first time
 agent-browser click @eN
 agent-browser wait 1000
-agent-browser eval 'document.querySelector("table tbody tr td")?.textContent?.trim()'
+agent-browser get text 'table tbody tr td'
 # Note value A
 
 agent-browser snapshot -i -C
 # Click the same header again to reverse sort
 agent-browser click @eN
 agent-browser wait 1000
-agent-browser eval 'document.querySelector("table tbody tr td")?.textContent?.trim()'
+agent-browser get text 'table tbody tr td'
 # Note value B
 ```
 
@@ -341,7 +348,7 @@ If any signal is true, OR if the snapshot shows interactive row refs: rows are l
 If rows are clickable:
 
 ```bash
-agent-browser eval 'document.querySelector("table tbody tr td")?.textContent?.trim()'
+agent-browser get text 'table tbody tr td'
 # note this value — verify the detail page matches
 
 agent-browser snapshot -i -C

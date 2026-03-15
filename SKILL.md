@@ -51,16 +51,21 @@ If the user scopes a feature, apply the chosen mode only to that scope.
 
 ## Session isolation
 
-Every run gets one named `agent-browser` session. Reuse it across all shell calls in that run. Follow the `agent-browser` substrate rules for ref freshness and session hygiene.
+Every run gets one named `agent-browser` session. Reuse it across all shell calls in that run, but treat that session as live isolation only. Do not assume the same `eval` page context survives every later shell block.
 
 At the start of the run:
 
 ```bash
 RAND_SUFFIX="$(openssl rand -hex 2 2>/dev/null || printf '%04x' $((RANDOM % 65536)))"
 export AGENT_BROWSER_SESSION="probe-$(date +%s)-$RAND_SUFFIX"
+export AGENT_BROWSER_STATE_FILE="/tmp/${AGENT_BROWSER_SESSION}-auth-state.json"
 ```
 
-For every shell block that calls `agent-browser`, export the same session first:
+For every shell block that calls `agent-browser`, export the same session first. Before any block that depends on `eval` or structured DOM reads, run the preflight in [references/session-preflight.md](references/session-preflight.md).
+
+Keep blocks small and self-contained. Pair navigation with the checks that depend on it rather than assuming a previous block's page context is still valid.
+
+Typical read block:
 
 ```bash
 export AGENT_BROWSER_SESSION="${AGENT_BROWSER_SESSION:?unset}"
@@ -69,13 +74,22 @@ agent-browser wait --load networkidle
 agent-browser snapshot -i -C
 ```
 
-Do not let separate shell calls drift onto different sessions.
+After successful auth, save explicit state if later recovery would need it:
+
+```bash
+export AGENT_BROWSER_SESSION="${AGENT_BROWSER_SESSION:?unset}"
+export AGENT_BROWSER_STATE_FILE="${AGENT_BROWSER_STATE_FILE:-/tmp/${AGENT_BROWSER_SESSION}-auth-state.json}"
+agent-browser state save "$AGENT_BROWSER_STATE_FILE"
+```
+
+Do not let separate shell calls drift onto different sessions. Do not rely on `AGENT_BROWSER_SESSION_NAME` for probe correctness.
 
 ## Safe probing posture
 
 - Use direct `agent-browser`, not `npx agent-browser`.
 - Use `snapshot -i -C` everywhere.
 - Re-snapshot after any DOM change.
+- Prefer `get url`, `get title`, `get count`, `get text`, and `wait --url` when they answer the question directly.
 - For non-local targets, default to `--allowed-domains`.
 - Keep the run read-mostly unless the user explicitly asked for state-changing behavior or the scoped test requires it.
 - If the environment already has an action policy or confirmation categories, use `--action-policy` and `--confirm-actions` instead of freehand mutating a real site.

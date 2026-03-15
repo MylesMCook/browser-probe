@@ -2,6 +2,12 @@
 
 ---
 
+Before using this file:
+
+- Take a fresh `agent-browser snapshot -i -C`.
+- Run the preflight in [../session-preflight.md](../session-preflight.md) before any `eval`.
+- Save `AGENT_BROWSER_STATE_FILE` after a successful login if later recovery would need to reopen the page.
+
 ## Discover form structure before testing
 
 Navigate to the app root first — the app will redirect to login if auth is required. Do not assume the browser is already on the login page.
@@ -13,6 +19,7 @@ agent-browser snapshot -i -C
 ```
 
 ```bash
+# Run the preflight in ../session-preflight.md first.
 agent-browser eval --stdin <<'EVALEOF'
 JSON.stringify({
   inputs: Array.from(document.querySelectorAll('input')).map(i => ({
@@ -82,10 +89,10 @@ agent-browser snapshot -i -C
 # Identify email input ref
 agent-browser fill @eN "corrected@example.com"
 agent-browser wait 300
-agent-browser eval '!!document.querySelector("[class*=\"error\" i], [role=\"alert\"]")'
+agent-browser get count '[class*="error" i], [role="alert"]'
 ```
 
-Expected: error clears on new input (false). If it stays visible while typing valid credentials, that's a Medium finding. **PASS / FAIL**
+Expected: count returns `0`. If it stays above `0` while typing valid credentials, that's a Medium finding. **PASS / FAIL**
 
 ---
 
@@ -146,6 +153,13 @@ EVALEOF
 
 Expected: URL changed away from login, `loginFormGone` true, user indicator present. **PASS / FAIL**
 
+If login succeeded, checkpoint explicit state once for later recovery:
+
+```bash
+export AGENT_BROWSER_STATE_FILE="${AGENT_BROWSER_STATE_FILE:-/tmp/${AGENT_BROWSER_SESSION}-auth-state.json}"
+agent-browser state save "$AGENT_BROWSER_STATE_FILE"
+```
+
 ---
 
 ## Protected route redirect when unauthenticated
@@ -159,32 +173,40 @@ Navigate directly to that URL without logging in. SUBSTITUTE the actual path fro
 # e.g. agent-browser open "$BASE_URL/dashboard"
 agent-browser open "$BASE_URL/ROUTE_PATH"
 agent-browser wait --load networkidle
-agent-browser eval 'JSON.stringify({ url: window.location.href, hasLoginForm: !!document.querySelector("input[type=password]") })'
+agent-browser get url
+agent-browser get count 'input[type="password"]'
 ```
 
-Expected: redirected to login page (`hasLoginForm` true), not shown the protected content. If the protected content is briefly visible before redirect (flash), that's a Medium finding. **PASS / FAIL**
+Expected: the URL resolves to the login flow and the password input count is above `0`. If the protected content is briefly visible before redirect (flash), that's a Medium finding. **PASS / FAIL**
 
 ---
 
-## Session persists after page reload
+## Session persists after page reload or one recovery reopen
 
-After a successful login, capture the current URL then navigate to it fresh (simulating a reload):
+After a successful login, capture the current URL then navigate to it fresh. If the reopen loses auth unexpectedly, recover once from the explicit state checkpoint:
 
 ```bash
-agent-browser eval 'window.location.href'
+agent-browser get url
 # ↑ Copy the URL printed above — it is the authenticated page you're on.
 # Paste it into the open command below, replacing PASTE_CAPTURED_URL_HERE:
 agent-browser open "PASTE_CAPTURED_URL_HERE"
 agent-browser wait --load networkidle
-agent-browser eval --stdin <<'EVALEOF'
-JSON.stringify({
-  stillAuthenticated: !document.querySelector('input[type="password"]'),
-  url: window.location.href
-})
-EVALEOF
+agent-browser get url
+agent-browser get count 'input[type="password"]'
 ```
 
-Expected: still authenticated, not redirected to login. If session is stored in memory only (not cookie/localStorage), reload will log the user out — that's a High finding. **PASS / FAIL**
+If the password input count is above `0`, recover once:
+
+```bash
+export AGENT_BROWSER_STATE_FILE="${AGENT_BROWSER_STATE_FILE:-/tmp/${AGENT_BROWSER_SESSION}-auth-state.json}"
+agent-browser state load "$AGENT_BROWSER_STATE_FILE"
+agent-browser open "PASTE_CAPTURED_URL_HERE"
+agent-browser wait --load networkidle
+agent-browser get url
+agent-browser get count 'input[type="password"]'
+```
+
+Expected: the page stays authenticated after the fresh open, or after one state-backed recovery reopen. If the app still falls back to login, that's a High finding. **PASS / FAIL**
 
 ---
 
@@ -233,15 +255,11 @@ agent-browser screenshot --full
 Assert logged out:
 
 ```bash
-agent-browser eval --stdin <<'EVALEOF'
-JSON.stringify({
-  url: window.location.href,
-  hasLoginForm: !!document.querySelector('input[type="password"]')
-})
-EVALEOF
+agent-browser get url
+agent-browser get count 'input[type="password"]'
 ```
 
-Expected: redirected to login or root, login form visible. **PASS / FAIL**
+Expected: redirected to login or root, with a password input count above `0`. **PASS / FAIL**
 
 Verify session is actually cleared (not just redirected). Use the same protected route path tested earlier. SUBSTITUTE the same `ROUTE_PATH` used in the "Protected route redirect" section:
 

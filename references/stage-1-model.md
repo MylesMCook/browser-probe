@@ -6,12 +6,15 @@ Do not start poking randomly. Build a concise model first.
 
 ```bash
 export AGENT_BROWSER_SESSION="${AGENT_BROWSER_SESSION:?unset}"
+export AGENT_BROWSER_STATE_FILE="${AGENT_BROWSER_STATE_FILE:-/tmp/${AGENT_BROWSER_SESSION}-auth-state.json}"
 agent-browser open "$TARGET_URL"
 agent-browser wait --load networkidle
 agent-browser snapshot -i -C
 ```
 
 If the target is not localhost-style, add `--allowed-domains` with the target host before opening it.
+
+Before every later `eval` block in Stage 1, run the preflight in [session-preflight.md](session-preflight.md). Keep each shell block self-contained instead of assuming the previous block's JS context is still live.
 
 ## 2. Identify the scope
 
@@ -36,6 +39,7 @@ Useful checks:
 
 ```bash
 export AGENT_BROWSER_SESSION="${AGENT_BROWSER_SESSION:?unset}"
+# Run the preflight in references/session-preflight.md first.
 agent-browser get url
 agent-browser get title
 agent-browser eval 'JSON.stringify({ pathname: window.location.pathname, hash: window.location.hash, lang: document.documentElement.lang || navigator.language || "unknown" })'
@@ -49,6 +53,7 @@ Useful route-discovery snippet:
 
 ```bash
 export AGENT_BROWSER_SESSION="${AGENT_BROWSER_SESSION:?unset}"
+# Run the preflight in references/session-preflight.md first.
 agent-browser eval --stdin <<'EOF'
 JSON.stringify(
   Array.from(document.querySelectorAll('a[href]'))
@@ -70,6 +75,7 @@ Use a quick structural read:
 
 ```bash
 export AGENT_BROWSER_SESSION="${AGENT_BROWSER_SESSION:?unset}"
+# Run the preflight in references/session-preflight.md first.
 agent-browser eval --stdin <<'EOF'
 JSON.stringify({
   hasNav: !!document.querySelector('nav, [role="navigation"]'),

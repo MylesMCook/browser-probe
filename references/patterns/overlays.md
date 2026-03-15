@@ -2,11 +2,18 @@
 
 ---
 
+Before using this file:
+
+- Take a fresh `agent-browser snapshot -i -C`.
+- Run the preflight in [../session-preflight.md](../session-preflight.md) before any `eval`.
+- Prefer direct commands when they answer the question, but keep `eval` for overlay structure and focus checks.
+
 ## Modal — opens, has close mechanisms, dismisses cleanly
 
 First find a button likely to open a modal — look for common trigger patterns:
 
 ```bash
+# Run the preflight in ../session-preflight.md first.
 agent-browser eval --stdin <<'EVALEOF'
 JSON.stringify(Array.from(document.querySelectorAll('button, [role="button"]')).filter(b => {
   const text = (b.textContent || '').trim().toLowerCase();

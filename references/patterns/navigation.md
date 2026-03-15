@@ -2,9 +2,16 @@
 
 ---
 
+Before using this file:
+
+- Take a fresh `agent-browser snapshot -i -C`.
+- Run the preflight in [../session-preflight.md](../session-preflight.md) before any `eval`.
+- Prefer `get url`, `get text`, and `wait --url` when they answer the question directly.
+
 ## Discover all nav links and their destinations
 
 ```bash
+# Run the preflight in ../session-preflight.md first.
 agent-browser eval --stdin <<'EVALEOF'
 JSON.stringify(Array.from(document.querySelectorAll('nav a, [role="navigation"] a, header a')).map(a => ({
   text: a.textContent?.trim(),
@@ -25,7 +32,7 @@ agent-browser snapshot -i -C
 agent-browser click @eN
 agent-browser wait --load networkidle
 agent-browser get url
-agent-browser eval 'document.querySelector("h1, h2")?.textContent?.trim()'
+agent-browser get text 'h1, h2'
 agent-browser screenshot --full
 # Navigate back to starting point before next link test:
 agent-browser open "$BASE_URL"
@@ -93,6 +100,7 @@ If neither `ariaCurrent` nor `activeByClass` is set on any link: the app may not
 ## Tab groups: clicking tabs switches content
 
 ```bash
+# Run the preflight in ../session-preflight.md first.
 agent-browser eval --stdin <<'EVALEOF'
 JSON.stringify(Array.from(document.querySelectorAll('[role="tab"]')).map(t => ({
   text: t.textContent?.trim(),
@@ -129,16 +137,17 @@ agent-browser snapshot -i -C
 # Identify logo or home link ref (usually top-left of header)
 agent-browser click @eN
 agent-browser wait --load networkidle
-agent-browser eval 'JSON.stringify({ pathname: window.location.pathname, hash: window.location.hash, href: window.location.href })'
+agent-browser get url
 ```
 
-Expected: for path-routed apps, `pathname` is `/` or the app's home route. For hash-routed apps, `hash` is `""` or `#/` and `pathname` is `/`. The logo should never navigate to a 404 or a deeply nested route. **PASS / FAIL**
+Expected: the URL resolves to `/`, the app's home route, or the hash-based home route. The logo should never navigate to a 404 or a deeply nested route. **PASS / FAIL**
 
 ---
 
 ## Breadcrumbs: parent links navigate correctly
 
 ```bash
+# Run the preflight in ../session-preflight.md first.
 agent-browser eval --stdin <<'EVALEOF'
 JSON.stringify(Array.from(document.querySelectorAll('[aria-label*="breadcrumb" i] a, [class*="breadcrumb"] a')).map(a => ({
   text: a.textContent?.trim(),
