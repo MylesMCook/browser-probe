@@ -1,0 +1,11 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[user]
+	name = Myles Cook
+	email = mylesmcook@gmail.com
+[remote "origin"]
+	url = https://github.com/MylesMCook/browser-probe.git
+	fetch = +refs/heads/*:refs/remotes/origin/*

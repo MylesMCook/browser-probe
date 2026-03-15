@@ -1,0 +1,10 @@
+id,should_trigger,prompt,notes
+pos-01,true,Smoke test this localhost app and tell me whether the login flow basically works.,Should choose smoke mode.
+pos-02,true,Explore this dashboard and tell me what feels broken and what works well.,Should choose balanced mode and include strengths.
+pos-03,true,Try to break the billing flow and check responsive behavior too.,Should choose bug-hunt mode.
+pos-04,true,Probe just the search and filter experience on this page.,Should stay scoped to the feature.
+pos-05,true,Test this app even if the UI is in German and note what still works.,Should handle non-English UI without relying on English labels.
+pos-06,true,Check whether the signup flow is blocked by auth or missing credentials and report that cleanly.,Should report blocked areas honestly.
+neg-01,false,Open this site and click the export button, then save the download to ./tmp.,This belongs to agent-browser.
+neg-02,false,Dogfood this staging site and give me repro videos and screenshots for every bug.,This belongs to dogfood.
+neg-03,false,Log into this app and save reusable auth for later browser runs.,This is primarily agent-browser.

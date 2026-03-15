@@ -1,0 +1,4 @@
+interface:
+  display_name: "browser-probe"
+  short_description: "Exploratory browser QA with smoke, balanced, and bug-hunt modes"
+  default_prompt: "Use $browser-probe to model the app, generate failure hypotheses and strength checks, run a balanced exploratory probe, and report findings, flakes, blocked areas, and verified strengths."
